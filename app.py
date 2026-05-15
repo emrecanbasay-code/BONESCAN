@@ -10,6 +10,7 @@ from io import BytesIO
 import numpy as np
 import cv2
 import base64
+from streamlit_paste_button import paste_image_button as pbutton
 
 st.set_page_config(
     page_title="Bone Fracture Detection",
@@ -64,57 +65,6 @@ class Streamlit_YOLOV7(SingleInference_YOLOV7):
             unsafe_allow_html=True,
         )
 
-        # Initialize session state for pasted image
-        if 'pasted_image_base64' not in st.session_state:
-            st.session_state.pasted_image_base64 = None
-
-        # Check for pasted image in query params
-        query_params = st.query_params
-        if 'pasted_img' in query_params and query_params['pasted_img']:
-            try:
-                encoded_img = query_params['pasted_img']
-                st.session_state.pasted_image_base64 = encoded_img
-                # Clear the query param
-                st.query_params.clear()
-            except:
-                pass
-
-        # Clipboard paste JavaScript - fixed for Streamlit iframe
-        st.markdown("""
-        <style>
-        .paste-btn { padding: 0.5rem 1rem; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
-        .paste-btn:hover { background: #e0e0e0; }
-        </style>
-        <script>
-        (function() {
-            async function pasteFromClipboard() {
-                try {
-                    const clipboardItems = await navigator.clipboard.read();
-                    for (const clipboardItem of clipboardItems) {
-                        for (const type of clipboardItem.types) {
-                            if (type.startsWith('image/')) {
-                                const blob = await clipboardItem.getType(type);
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                    const base64 = reader.result.split(',')[1];
-                                    const url = new URL(window.location.href);
-                                    url.searchParams.set('pasted_img', base64);
-                                    window.location.href = url.toString();
-                                };
-                                reader.readAsDataURL(blob);
-                                return;
-                            }
-                        }
-                    }
-                    alert('No image in clipboard! Use Windows+Shift+S first.');
-                } catch (err) {
-                    alert('Paste failed: ' + err.message + '\\nMake sure you allow clipboard permissions.');
-                }
-            }
-            window.pasteFromClipboard = pasteFromClipboard;
-        })();
-        </script>
-        """, unsafe_allow_html=True)
         st.title('🦴 Bone Fracture Detection')
         st.caption('Upload an X-ray image to detect fractures')
 
@@ -148,23 +98,21 @@ class Streamlit_YOLOV7(SingleInference_YOLOV7):
         with col1:
             uploaded_img=st.file_uploader('Upload an image')
         with col2:
-            st.markdown(
-                """<button class="paste-btn" onclick="pasteFromClipboard()">📋 Paste</button>""",
-                unsafe_allow_html=True
+            st.write("")  # spacing to align with file uploader
+            paste_result = pbutton(
+                label="📋 Paste from Clipboard",
+                text_color="#ffffff",
+                background_color="#3498db",
+                hover_background_color="#2980b9",
+                key="paste_btn",
+                errors="raise",
             )
 
-        # Check for pasted image from session state (via query params)
-        if st.session_state.get('pasted_image_base64'):
-            try:
-                img_data = base64.b64decode(st.session_state.pasted_image_base64)
-                st.image(img_data, caption='📋 Pasted from clipboard')
-                self.im0 = Image.open(BytesIO(img_data)).convert('RGB')
-                self.im0 = np.array(self.im0)
-                # Clear after loading
-                st.session_state.pasted_image_base64 = None
-                return self.im0
-            except Exception as e:
-                st.error(f'Error loading pasted image: {e}')
+        # Check for pasted image from clipboard
+        if paste_result.image_data is not None:
+            st.image(paste_result.image_data, caption='📋 Pasted from clipboard')
+            self.im0 = np.array(paste_result.image_data.convert('RGB'))
+            return self.im0
 
         if uploaded_img is not None:
             self.img_data=uploaded_img.getvalue()
@@ -214,6 +162,3 @@ if __name__=='__main__':
     app.load_model() #Load the yolov7 model
     
     app.main()
-
-
-
