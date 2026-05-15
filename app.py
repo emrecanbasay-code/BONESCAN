@@ -262,7 +262,7 @@ class Streamlit_YOLOV7(SingleInference_YOLOV7):
                 'Detection Sensitivity',
                 options=[0.05, 0.1, 0.15, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
                         0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
-                value=0.25,
+                value=0.05,
                 format_func=lambda x: f"{x:.2f}"
             )
 
@@ -488,7 +488,7 @@ if __name__ == '__main__':
 
     # Initialize model
     app.new_yolo_model(img_size, path_yolov7_weights, path_img_i)
-    app.conf_thres = 0.25
+    app.conf_thres = 0.05
 
     # Load the YOLOv7 model
     app.load_model()
