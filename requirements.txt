@@ -11,3 +11,4 @@ pandas
 seaborn
 scipy
 tqdm
+streamlit-paste-button
