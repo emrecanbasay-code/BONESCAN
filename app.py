@@ -79,43 +79,40 @@ class Streamlit_YOLOV7(SingleInference_YOLOV7):
             except:
                 pass
 
-        # Clipboard paste JavaScript
+        # Clipboard paste JavaScript - fixed for Streamlit iframe
         st.markdown("""
         <style>
         .paste-btn { padding: 0.5rem 1rem; border: 1px solid #ccc; border-radius: 4px; background: #f0f0f0; cursor: pointer; }
         .paste-btn:hover { background: #e0e0e0; }
         </style>
         <script>
-        const doc = window.parent.document;
-        const script = doc.createElement('script');
-        script.textContent = `
-        async function pasteFromClipboard() {
-            try {
-                const clipboardItems = await navigator.clipboard.read();
-                for (const clipboardItem of clipboardItems) {
-                    for (const type of clipboardItem.types) {
-                        if (type.startsWith('image/')) {
-                            const blob = await clipboardItem.getType(type);
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                                const base64 = reader.result.split(',')[1];
-                                const url = new URL(window.location.href);
-                                url.searchParams.set('pasted_img', base64);
-                                window.location.href = url.toString();
-                            };
-                            reader.readAsDataURL(blob);
-                            return;
+        (function() {
+            async function pasteFromClipboard() {
+                try {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const clipboardItem of clipboardItems) {
+                        for (const type of clipboardItem.types) {
+                            if (type.startsWith('image/')) {
+                                const blob = await clipboardItem.getType(type);
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64 = reader.result.split(',')[1];
+                                    const url = new URL(window.location.href);
+                                    url.searchParams.set('pasted_img', base64);
+                                    window.location.href = url.toString();
+                                };
+                                reader.readAsDataURL(blob);
+                                return;
+                            }
                         }
                     }
+                    alert('No image in clipboard! Use Windows+Shift+S first.');
+                } catch (err) {
+                    alert('Paste failed: ' + err.message + '\\nMake sure you allow clipboard permissions.');
                 }
-                alert('No image in clipboard! Use Windows+Shift+S first.');
-            } catch (err) {
-                alert('Paste failed: ' + err.message);
             }
-        }
-        window.pasteFromClipboard = pasteFromClipboard;
-        `;
-        doc.head.appendChild(script);
+            window.pasteFromClipboard = pasteFromClipboard;
+        })();
         </script>
         """, unsafe_allow_html=True)
         st.title('🦴 Bone Fracture Detection')
@@ -151,9 +148,8 @@ class Streamlit_YOLOV7(SingleInference_YOLOV7):
         with col1:
             uploaded_img=st.file_uploader('Upload an image')
         with col2:
-            st.write("")
             st.markdown(
-                """<button class="paste-btn" onclick="window.parent.pasteFromClipboard()">📋 Paste</button>""",
+                """<button class="paste-btn" onclick="pasteFromClipboard()">📋 Paste</button>""",
                 unsafe_allow_html=True
             )
 
@@ -209,7 +205,7 @@ if __name__=='__main__':
     #INPUTS for YOLOV7
     img_size=2560
     path_yolov7_weights="weights/best.pt"
-    path_img_i="https://github.com/noneedanick/bonefracturedetection/blob/main/test_images/fracture_elbow.jpg?raw=true"
+    path_img_i="https://cdn.prod.website-files.com/66d9c5d9b2cb9d538db62b7d/67bf872bc901484636782f79_AI%20in%20Fracture.jpg"
     #INPUTS for webapp
     app.capt="MD:ECB "
     app.new_yolo_model(img_size,path_yolov7_weights,path_img_i)
